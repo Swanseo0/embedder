@@ -10,6 +10,7 @@
 #include "flutter/shell/platform/common/incoming_message_dispatcher.h"
 #include "flutter/shell/platform/tizen/flutter_project_bundle.h"
 #include "flutter/shell/platform/tizen/flutter_tizen_engine.h"
+#include "flutter/shell/platform/tizen/flutter_tizen_engine_group.h"
 #include "flutter/shell/platform/tizen/flutter_tizen_view.h"
 #include "flutter/shell/platform/tizen/logger.h"
 #include "flutter/shell/platform/tizen/public/flutter_platform_view.h"
@@ -68,22 +69,27 @@ FlutterDesktopEngineRef FlutterDesktopEngineCreate(
   if (project.GetArgumentValue("--tizen-logging-port", &logging_port)) {
     flutter::Logger::SetLoggingPort(std::stoi(logging_port));
   }
-  flutter::Logger::Start();
+  auto& engine_group = flutter::FlutterTizenEngineGroup::GetInstance();
 
-  auto engine = std::make_unique<flutter::FlutterTizenEngine>(project);
-  return HandleForEngine(engine.release());
+  if (engine_group.GetEngineCount() <= 0) {
+    flutter::Logger::Start();
+  }
+  auto engine = engine_group.MakeEngineWithProject(project);
+  return HandleForEngine(engine);
 }
 
 bool FlutterDesktopEngineRun(const FlutterDesktopEngineRef engine) {
-  return EngineFromHandle(engine)->RunEngine();
+  return EngineFromHandle(engine)->RunOrSpawnEngine();
 }
 
 void FlutterDesktopEngineShutdown(FlutterDesktopEngineRef engine_ref) {
-  flutter::Logger::Stop();
+  auto& engine_group = flutter::FlutterTizenEngineGroup::GetInstance();
+  if (engine_group.GetEngineCount() <= 1) {
+    flutter::Logger::Stop();
+  }
 
   flutter::FlutterTizenEngine* engine = EngineFromHandle(engine_ref);
-  engine->StopEngine();
-  delete engine;
+  engine_group.RemoveEngine(engine);
 }
 
 FlutterDesktopViewRef FlutterDesktopPluginRegistrarGetView(
@@ -218,12 +224,11 @@ FlutterDesktopViewRef FlutterDesktopViewCreateFromNewWindow(
 
   auto view = std::make_unique<flutter::FlutterTizenView>(std::move(window));
 
-  // Take ownership of the engine, starting it if necessary.
-  view->SetEngine(
-      std::unique_ptr<flutter::FlutterTizenEngine>(EngineFromHandle(engine)));
+  // Starting it if necessary.
+  view->SetEngine(EngineFromHandle(engine));
   view->CreateRenderSurface(window_properties.renderer_type);
   if (!view->engine()->IsRunning()) {
-    if (!view->engine()->RunEngine()) {
+    if (!view->engine()->RunOrSpawnEngine()) {
       return nullptr;
     }
   }

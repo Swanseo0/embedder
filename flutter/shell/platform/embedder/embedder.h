@@ -1824,6 +1824,16 @@ FlutterEngineResult FlutterEngineRun(size_t version,
                                      FLUTTER_API_SYMBOL(FlutterEngine) *
                                          engine_out);
 
+FLUTTER_EXPORT
+FlutterEngineResult FlutterEngineSpawn(size_t version,
+                                       const FlutterRendererConfig* config,
+                                       const FlutterProjectArgs* args,
+                                       void* user_data,
+                                       FLUTTER_API_SYMBOL(FlutterEngine)
+                                           spawner,
+                                       FLUTTER_API_SYMBOL(FlutterEngine) *
+                                           engine_out);
+
 //------------------------------------------------------------------------------
 /// @brief      Shuts down a Flutter engine instance. The engine handle is no
 ///             longer valid for any calls in the embedder API after this point.
@@ -2441,6 +2451,13 @@ typedef FlutterEngineResult (*FlutterEngineRunFnPtr)(
     const FlutterProjectArgs* args,
     void* user_data,
     FLUTTER_API_SYMBOL(FlutterEngine) * engine_out);
+  typedef FlutterEngineResult (*FlutterEngineSpawnFnPtr)(
+    size_t version,
+    const FlutterRendererConfig* config,
+    const FlutterProjectArgs* args,
+    void* user_data,
+    FLUTTER_API_SYMBOL(FlutterEngine) engine_spawner,
+    FLUTTER_API_SYMBOL(FlutterEngine) * engine_out);
 typedef FlutterEngineResult (*FlutterEngineShutdownFnPtr)(
     FLUTTER_API_SYMBOL(FlutterEngine) engine);
 typedef FlutterEngineResult (*FlutterEngineInitializeFnPtr)(
@@ -2554,6 +2571,7 @@ typedef struct {
   FlutterEngineCreateAOTDataFnPtr CreateAOTData;
   FlutterEngineCollectAOTDataFnPtr CollectAOTData;
   FlutterEngineRunFnPtr Run;
+  FlutterEngineSpawnFnPtr Spawn;
   FlutterEngineShutdownFnPtr Shutdown;
   FlutterEngineInitializeFnPtr Initialize;
   FlutterEngineDeinitializeFnPtr Deinitialize;

@@ -8,6 +8,8 @@
 #include "flutter/shell/platform/tizen/flutter_tizen_view.h"
 #include "flutter/shell/platform/tizen/tizen_view_elementary.h"
 
+#include "flutter/shell/platform/tizen/logger.h"
+
 namespace {
 
 // Returns the engine corresponding to the given opaque API handle.
@@ -33,12 +35,11 @@ FlutterDesktopViewRef FlutterDesktopViewCreateFromElmParent(
   auto view =
       std::make_unique<flutter::FlutterTizenView>(std::move(tizen_view));
 
-  // Take ownership of the engine, starting it if necessary.
-  view->SetEngine(
-      std::unique_ptr<flutter::FlutterTizenEngine>(EngineFromHandle(engine)));
+  // Starting it if necessary.
+  view->SetEngine(EngineFromHandle(engine));
   view->CreateRenderSurface(FlutterDesktopRendererType::kEvasGL);
   if (!view->engine()->IsRunning()) {
-    if (!view->engine()->RunEngine()) {
+    if (!view->engine()->RunOrSpawnEngine()) {
       return nullptr;
     }
   }
