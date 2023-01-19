@@ -62,11 +62,18 @@ class FlutterTizenEngine {
   // Creates a GL renderer from the given type.
   void CreateRenderer(FlutterDesktopRendererType renderer_type);
 
+  // If the engine is the only engine of the engine group, starts running the
+  // engine. Otherwise, spawns the engine.
+  bool RunOrSpawnEngine();
+
   // Starts running the engine with the given entrypoint. If null, defaults to
   // main().
   //
   // Returns false if the engine couldn't be started.
   bool RunEngine();
+
+  // Returns false if the engine couldn't be spawned.
+  bool SpawnEngine();
 
   // Returns true if the engine is currently running.
   bool IsRunning() { return engine_ != nullptr; }
@@ -80,6 +87,10 @@ class FlutterTizenEngine {
   // The view displaying this engine's content, if any. This will be null for
   // headless engines.
   FlutterTizenView* view() { return view_; }
+
+  void SetId(uint32_t id) { id_ = id; }
+
+  uint32_t id() { return id_; }
 
   FlutterDesktopMessengerRef messenger() { return messenger_.get(); }
 
@@ -275,6 +286,8 @@ class FlutterTizenEngine {
   // The vsync waiter for the embedder.
   std::unique_ptr<TizenVsyncWaiter> vsync_waiter_;
 #endif
+
+  uint32_t id_;
 };
 
 }  // namespace flutter

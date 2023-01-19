@@ -11,6 +11,7 @@
 #include "flutter/shell/platform/embedder/embedder.h"
 #include "flutter/shell/platform/tizen/flutter_project_bundle.h"
 #include "flutter/shell/platform/tizen/flutter_tizen_engine.h"
+#include "flutter/shell/platform/tizen/flutter_tizen_engine_group.h"
 #include "flutter/shell/platform/tizen/flutter_tizen_view.h"
 #include "flutter/shell/platform/tizen/logger.h"
 #include "flutter/shell/platform/tizen/public/flutter_platform_view.h"
@@ -72,20 +73,22 @@ FlutterDesktopEngineRef FlutterDesktopEngineCreate(
   }
   flutter::Logger::Start();
 
-  auto engine = std::make_unique<flutter::FlutterTizenEngine>(project);
-  return HandleForEngine(engine.release());
+  auto engine =
+      flutter::FlutterTizenEngineGroup::GetInstance().MakeEngineWithProject(
+          project);
+
+  return HandleForEngine(engine);
 }
 
 bool FlutterDesktopEngineRun(const FlutterDesktopEngineRef engine) {
-  return EngineFromHandle(engine)->RunEngine();
+  return EngineFromHandle(engine)->RunOrSpawnEngine();
 }
 
 void FlutterDesktopEngineShutdown(FlutterDesktopEngineRef engine_ref) {
   flutter::Logger::Stop();
 
   flutter::FlutterTizenEngine* engine = EngineFromHandle(engine_ref);
-  engine->StopEngine();
-  delete engine;
+  flutter::FlutterTizenEngineGroup::GetInstance().StopEngine(engine->id());
 }
 
 FlutterDesktopViewRef FlutterDesktopPluginRegistrarGetView(
@@ -220,12 +223,11 @@ FlutterDesktopViewRef FlutterDesktopViewCreateFromNewWindow(
 
   auto view = std::make_unique<flutter::FlutterTizenView>(std::move(window));
 
-  // Take ownership of the engine, starting it if necessary.
-  view->SetEngine(
-      std::unique_ptr<flutter::FlutterTizenEngine>(EngineFromHandle(engine)));
+  // Starting it if necessary.
+  view->SetEngine(EngineFromHandle(engine));
   view->CreateRenderSurface(window_properties.renderer_type);
   if (!view->engine()->IsRunning()) {
-    if (!view->engine()->RunEngine()) {
+    if (!view->engine()->RunOrSpawnEngine()) {
       return nullptr;
     }
   }
