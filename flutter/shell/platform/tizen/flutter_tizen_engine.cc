@@ -110,6 +110,7 @@ bool FlutterTizenEngine::RunOrSpawnEngine() {
 }
 
 bool FlutterTizenEngine::RunEngine() {
+  FT_LOG(Error) << "[Seung] " << __FUNCTION__;
   if (engine_ != nullptr) {
     FT_LOG(Error) << "The engine has already started.";
     return false;
@@ -269,6 +270,7 @@ bool FlutterTizenEngine::RunEngine() {
 }
 
 bool FlutterTizenEngine::SpawnEngine() {
+  FT_LOG(Error) << "[Seung] " << __FUNCTION__;
   if (engine_ != nullptr) {
     FT_LOG(Error) << "The engine has already started.";
     return false;
@@ -339,8 +341,11 @@ bool FlutterTizenEngine::SpawnEngine() {
     args.custom_dart_entrypoint = project_->custom_dart_entrypoint().c_str();
   }
 #ifndef WEARABLE_PROFILE
-  args.update_semantics_node_callback = OnUpdateSemanticsNode;
-  args.update_semantics_custom_action_callback = OnUpdateSemanticsCustomActions;
+  args.update_semantics_callback2 = [](const FlutterSemanticsUpdate2* update,
+                                       void* user_data) {
+    auto* engine = static_cast<FlutterTizenEngine*>(user_data);
+    engine->OnUpdateSemantics(update);
+  };
 
   if (IsHeaded() && dynamic_cast<TizenRendererEvasGL*>(renderer_.get())) {
     vsync_waiter_ = std::make_unique<TizenVsyncWaiter>(this);
@@ -381,8 +386,6 @@ bool FlutterTizenEngine::SpawnEngine() {
         [this](const FlutterKeyEvent& event, FlutterKeyEventCallback callback,
                void* user_data) { SendKeyEvent(event, callback, user_data); });
     navigation_channel_ = std::make_unique<NavigationChannel>(
-        internal_plugin_registrar_->messenger());
-    platform_view_channel_ = std::make_unique<PlatformViewChannel>(
         internal_plugin_registrar_->messenger());
   }
 
@@ -505,9 +508,10 @@ void FlutterTizenEngine::SetupLocales() {
   // Convert the locale list to the locale pointer list that must be provided.
   std::vector<const FlutterLocale*> flutter_locale_list;
   flutter_locale_list.reserve(flutter_locales.size());
-  std::transform(flutter_locales.begin(), flutter_locales.end(),
-                 std::back_inserter(flutter_locale_list),
-                 [](const auto& arg) -> const auto* { return &arg; });
+  std::transform(
+      flutter_locales.begin(), flutter_locales.end(),
+      std::back_inserter(flutter_locale_list),
+      [](const auto& arg) -> const auto* { return &arg; });
 
   embedder_api_.UpdateLocales(engine_, flutter_locale_list.data(),
                               flutter_locale_list.size());
