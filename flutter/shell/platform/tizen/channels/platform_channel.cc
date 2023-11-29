@@ -66,12 +66,12 @@ PlatformChannel::PlatformChannel(BinaryMessenger* messenger,
           kChannelName,
           &JsonMethodCodec::GetInstance())),
       view_(view) {
-#if defined(MOBILE_PROFILE) || defined(COMMON_PROFILE)
-  int ret = cbhm_open_service(&cbhm_handle_);
-  if (ret != CBHM_ERROR_NONE) {
-    FT_LOG(Error) << "Failed to initialize the clipboard service.";
-  }
-#endif
+// #if defined(MOBILE_PROFILE) || defined(COMMON_PROFILE)
+//   int ret = cbhm_open_service(&cbhm_handle_);
+//   if (ret != CBHM_ERROR_NONE) {
+//     FT_LOG(Error) << "Failed to initialize the clipboard service.";
+//   }
+// #endif
 
   channel_->SetMethodCallHandler(
       [this](const MethodCall<rapidjson::Document>& call,
@@ -81,9 +81,9 @@ PlatformChannel::PlatformChannel(BinaryMessenger* messenger,
 }
 
 PlatformChannel::~PlatformChannel() {
-#if defined(MOBILE_PROFILE) || defined(COMMON_PROFILE)
-  cbhm_close_service(cbhm_handle_);
-#endif
+// #if defined(MOBILE_PROFILE) || defined(COMMON_PROFILE)
+//   cbhm_close_service(cbhm_handle_);
+// #endif
 }
 
 void PlatformChannel::HandleMethodCall(
@@ -190,54 +190,54 @@ void PlatformChannel::HapticFeedbackVibrate(const std::string& feedback_type) {
 void PlatformChannel::GetClipboardData(ClipboardCallback on_data) {
   on_clipboard_data_ = std::move(on_data);
 
-#if defined(MOBILE_PROFILE) || defined(COMMON_PROFILE)
-  int ret = cbhm_selection_get(
-      cbhm_handle_, CBHM_SEL_TYPE_TEXT,
-      [](cbhm_h cbhm_handle, const char* buf, size_t len,
-         void* user_data) -> int {
-        auto* self = static_cast<PlatformChannel*>(user_data);
-        std::string data;
-        if (buf) {
-          data = std::string(buf, len);
-        }
-        self->on_clipboard_data_(data);
-        self->on_clipboard_data_ = nullptr;
-        return CBHM_ERROR_NONE;
-      },
-      this);
-  if (ret != CBHM_ERROR_NONE) {
-    if (ret == CBHM_ERROR_NO_DATA) {
-      FT_LOG(Info) << "No clipboard data available.";
-    } else {
-      FT_LOG(Error) << "Failed to get clipboard data.";
-    }
-    on_clipboard_data_("");
-    on_clipboard_data_ = nullptr;
-  }
-#else
+// #if defined(MOBILE_PROFILE) || defined(COMMON_PROFILE)
+//   int ret = cbhm_selection_get(
+//       cbhm_handle_, CBHM_SEL_TYPE_TEXT,
+//       [](cbhm_h cbhm_handle, const char* buf, size_t len,
+//          void* user_data) -> int {
+//         auto* self = static_cast<PlatformChannel*>(user_data);
+//         std::string data;
+//         if (buf) {
+//           data = std::string(buf, len);
+//         }
+//         self->on_clipboard_data_(data);
+//         self->on_clipboard_data_ = nullptr;
+//         return CBHM_ERROR_NONE;
+//       },
+//       this);
+//   if (ret != CBHM_ERROR_NONE) {
+//     if (ret == CBHM_ERROR_NO_DATA) {
+//       FT_LOG(Info) << "No clipboard data available.";
+//     } else {
+//       FT_LOG(Error) << "Failed to get clipboard data.";
+//     }
+//     on_clipboard_data_("");
+//     on_clipboard_data_ = nullptr;
+//   }
+// #else
   on_clipboard_data_(clipboard_);
   on_clipboard_data_ = nullptr;
-#endif
+// #endif
 }
 
 void PlatformChannel::SetClipboardData(const std::string& data) {
-#if defined(MOBILE_PROFILE) || defined(COMMON_PROFILE)
-  int ret = cbhm_selection_set(cbhm_handle_, CBHM_SEL_TYPE_TEXT, data.c_str(),
-                               data.length());
-  if (ret != CBHM_ERROR_NONE) {
-    FT_LOG(Error) << "Failed to set clipboard data.";
-  }
-#else
+// #if defined(MOBILE_PROFILE) || defined(COMMON_PROFILE)
+//   int ret = cbhm_selection_set(cbhm_handle_, CBHM_SEL_TYPE_TEXT, data.c_str(),
+//                                data.length());
+//   if (ret != CBHM_ERROR_NONE) {
+//     FT_LOG(Error) << "Failed to set clipboard data.";
+//   }
+// #else
   clipboard_ = data;
-#endif
+// #endif
 }
 
 bool PlatformChannel::ClipboardHasStrings() {
-#if defined(MOBILE_PROFILE) || defined(COMMON_PROFILE)
-  return cbhm_item_count_get(cbhm_handle_) > 0;
-#else
+// #if defined(MOBILE_PROFILE) || defined(COMMON_PROFILE)
+//   return cbhm_item_count_get(cbhm_handle_) > 0;
+// #else
   return !clipboard_.empty();
-#endif
+// #endif
 }
 
 void PlatformChannel::RestoreSystemUiOverlays() {
